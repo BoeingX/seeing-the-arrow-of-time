@@ -1,0 +1,5 @@
+.ropeproject
+data/
+*.swp
+*.txt
+*.mat
