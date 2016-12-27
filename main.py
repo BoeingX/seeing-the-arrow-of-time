@@ -4,6 +4,10 @@ import cv2
 import numpy as np
 import caffe
 import progressbar
+from sklearn.svm import SVC
+
+index_dir = './helper'
+data_dir = './data/ArrowDataAll'
 
 def load_img(filename, flip = False):
     img = cv2.imread(filename)
@@ -35,19 +39,6 @@ def optical_flow(imgs):
         flow = cv2.calcOpticalFlowFarneback(imgs[i-1],imgs[i+1], None, 0.5, 3, 15, 3, 5, 1.2, 0)
         flows.append(flow)
     return flows
-
-def load_data(dataset = 1):
-    index_dir = './helper'
-    train_list = os.path.join(index_dir, 'train') + str(dataset) + '.txt'
-    test_list = os.path.join(index_dir, 'test') + str(dataset) + '.txt'
-    with open(train_list) as f:
-        train_list = f.read().splitlines()
-    with open(test_list) as f:
-        test_list = f.read().splitlines()
-    train_labels = map(lambda x: x[0] == 'F', train_list)
-    test_labels = map(lambda x: x[0] == 'F', test_list)
-    return train_list, train_labels, test_list, test_labels
-
 def optical_flow_to_motion(flow):
     hsv = np.zeros((flow.shape[0], flow.shape[1], 3), dtype = np.uint8)
     hsv[...,1] = 255
@@ -85,7 +76,7 @@ def write_features(predictions, video):
     with open(os.path.join(video, 'features.csv'), 'w') as f:
         np.savetxt(f, predictions, delimiter = ',')
 
-def run():
+def generate_features():
     CAFFE_ROOT = '/home/bysong/caffe/'
     MODEL_FILE = '/home/bysong/caffe/models/bvlc_reference_caffenet/deploy.prototxt'
     PRETRAINED = '/home/bysong/caffe/models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel'
@@ -105,7 +96,6 @@ def run():
     #                   raw_scale=255,
     #                   image_dims=(256, 256))
 
-    data_dir = "./data/ArrowDataAll/"
     videos = map(lambda x: os.path.join(data_dir, x), os.listdir(data_dir))
 
     count = 1
@@ -115,8 +105,70 @@ def run():
         write_features(predictions, video)
         count += 1
 
+def is_forward(video):
+    video_name = filter(len, video.split('/'))[-1]
+    if video_name[0] == 'F':
+        return True
+    return False
+
+def load_features(video):
+    with open(os.path.join(video, 'features.csv'), 'r') as f:
+        X = np.loadtxt(f, delimiter = ',')
+    return X
+
+def load_labels(video):
+    if is_forward(video):
+        y = np.asarray([1, 1, -1, -1])
+    else:
+        y = np.asarray([-1, -1, 1, 1])
+    return y
+
+def load_features_labels(videos):
+    X = np.asarray(map(load_features, videos))
+    X = X.reshape(-1, X.shape[-1])
+    y = np.asarray(map(load_labels, videos))
+    y = y.reshape(1, -1).squeeze()
+    return X, y
+
+def load_dataset(train_list, test_list):
+    X_train, y_train = load_features_labels(train_list)
+    X_test, y_test = load_features_labels(test_list)
+    return X_train, y_train, X_test, y_test
+
+def load_list(dataset = 1):
+    train_list = os.path.join(index_dir, 'train') + str(dataset) + '.txt'
+    test_list = os.path.join(index_dir, 'test') + str(dataset) + '.txt'
+    with open(train_list) as f:
+        train_list = f.read().splitlines()
+    with open(test_list) as f:
+        test_list = f.read().splitlines()
+    train_list = map(lambda x: os.path.join(data_dir, x), train_list)
+    test_list = map(lambda x: os.path.join(data_dir, x), test_list)
+    return train_list, test_list
+
+def predict_dataset(dataset = 1):
+    train_list, test_list = load_list(dataset)
+    X_train, y_train, X_test, y_test_ = load_dataset(train_list, test_list)
+    svc = SVC(kernel = 'rbf')
+    svc.fit(X_train, y_train)
+    y_predict_ = svc.predict(X_test)
+    y_predict = np.empty(len(y_predict_) / 4)
+    y_test = np.empty(len(y_predict))
+    for i in range(len(y_predict)):
+        k = 4*i
+        y_predict[i] = y_predict_[k] + y_predict_[k+1] - y_predict_[k+2] - y_predict_[k+3]
+        y_test[i] = y_test_[k]
+    y_predict = np.sign(y_predict + 0.5)
+    precision = np.sum(y_predict == y_test) / float(len(y_test))
+    print 'Precision of dataset %d: %f' % (dataset, precision)
+    return precision
+
+def run():
+    map(predict_dataset, range(1, 4))
+
+
 if __name__ == '__main__':
-    run()
+    #generate_features()
     #video = "./data/ArrowDataAll/F_aqvxyejK0MQ/"
     #imgs = load_video(video, False, False)
     #imgs_gray = map(lambda x: cv2.cvtColor(x, cv2.COLOR_BGR2GRAY), imgs)
