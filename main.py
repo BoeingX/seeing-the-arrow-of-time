@@ -6,9 +6,12 @@ import caffe
 import progressbar
 from sklearn.svm import SVC
 
-index_dir = './helper'
-data_dir = './data/ArrowDataAll'
-suffix = 'caffenet'
+INDEX_DIR = 'helper'
+DATA_DIR = 'data/ArrowDataAll'
+SUFFIX = 'caffenet'
+CAFFE_ROOT = os.path.join(os.path.expanduser('~') 'caffe')
+MODEL_FILE = os.path.join(CAFFE_ROOT, 'models/bvlc_reference_caffenet/deploy.prototxt')
+PRETRAINED = os.path.join(CAFFE_ROOT, 'models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel')
 
 def load_img(filename, flip = False):
     img = cv2.imread(filename)
@@ -74,13 +77,11 @@ def video_to_vec(video, net, transformer):
     return np.asarray(predictions)
 
 def write_features(predictions, video):
-    with open(os.path.join(video, 'features' + '-' + suffix + '.csv'), 'w') as f:
+    with open(os.path.join(video, 'features' + '-' + SUFFIX + '.csv'), 'w') as f:
         np.savetxt(f, predictions, delimiter = ',')
 
 def generate_features():
-    CAFFE_ROOT = '/home/bysong/caffe/'
-    MODEL_FILE = '/home/bysong/caffe/models/bvlc_reference_caffenet/deploy.prototxt'
-    PRETRAINED = '/home/bysong/caffe/models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel'
+
     caffe.set_mode_gpu()
     net = caffe.Net(MODEL_FILE, PRETRAINED, caffe.TEST) 
     net.blobs['data'].reshape(1, 3, 227, 227)
@@ -97,7 +98,7 @@ def generate_features():
     #                   raw_scale=255,
     #                   image_dims=(256, 256))
 
-    videos = map(lambda x: os.path.join(data_dir, x), os.listdir(data_dir))
+    videos = map(lambda x: os.path.join(DATA_DIR, x), os.listdir(DATA_DIR))
 
     count = 1
     for video in videos:
@@ -113,7 +114,7 @@ def is_forward(video):
     return False
 
 def load_features(video):
-    with open(os.path.join(video, 'features' + '-' + suffix + '.csv'), 'r') as f:
+    with open(os.path.join(video, 'features' + '-' + SUFFIX + '.csv'), 'r') as f:
         X = np.loadtxt(f, delimiter = ',')
     return X
 
@@ -137,14 +138,14 @@ def load_dataset(train_list, test_list):
     return X_train, y_train, X_test, y_test
 
 def load_list(dataset = 1):
-    train_list = os.path.join(index_dir, 'train') + str(dataset) + '.txt'
-    test_list = os.path.join(index_dir, 'test') + str(dataset) + '.txt'
+    train_list = os.path.join(INDEX_DIR, 'train') + str(dataset) + '.txt'
+    test_list = os.path.join(INDEX_DIR, 'test') + str(dataset) + '.txt'
     with open(train_list) as f:
         train_list = f.read().splitlines()
     with open(test_list) as f:
         test_list = f.read().splitlines()
-    train_list = map(lambda x: os.path.join(data_dir, x), train_list)
-    test_list = map(lambda x: os.path.join(data_dir, x), test_list)
+    train_list = map(lambda x: os.path.join(DATA_DIR, x), train_list)
+    test_list = map(lambda x: os.path.join(DATA_DIR, x), test_list)
     return train_list, test_list
 
 def predict_dataset(dataset = 1):
