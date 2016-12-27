@@ -8,6 +8,7 @@ from sklearn.svm import SVC
 
 index_dir = './helper'
 data_dir = './data/ArrowDataAll'
+suffix = 'caffenet'
 
 def load_img(filename, flip = False):
     img = cv2.imread(filename)
@@ -73,7 +74,7 @@ def video_to_vec(video, net, transformer):
     return np.asarray(predictions)
 
 def write_features(predictions, video):
-    with open(os.path.join(video, 'features.csv'), 'w') as f:
+    with open(os.path.join(video, 'features' + '-' + suffix + '.csv'), 'w') as f:
         np.savetxt(f, predictions, delimiter = ',')
 
 def generate_features():
@@ -112,7 +113,7 @@ def is_forward(video):
     return False
 
 def load_features(video):
-    with open(os.path.join(video, 'features.csv'), 'r') as f:
+    with open(os.path.join(video, 'features' + '-' + suffix + '.csv'), 'r') as f:
         X = np.loadtxt(f, delimiter = ',')
     return X
 
@@ -168,6 +169,7 @@ def run():
 
 
 if __name__ == '__main__':
+    run()
     #generate_features()
     #video = "./data/ArrowDataAll/F_aqvxyejK0MQ/"
     #imgs = load_video(video, False, False)
