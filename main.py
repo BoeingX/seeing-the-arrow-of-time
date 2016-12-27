@@ -8,10 +8,10 @@ from sklearn.svm import SVC
 
 INDEX_DIR = 'helper'
 DATA_DIR = 'data/ArrowDataAll'
-SUFFIX = 'caffenet'
-CAFFE_ROOT = os.path.join(os.path.expanduser('~') 'caffe')
-MODEL_FILE = os.path.join(CAFFE_ROOT, 'models/bvlc_reference_caffenet/deploy.prototxt')
-PRETRAINED = os.path.join(CAFFE_ROOT, 'models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel')
+SUFFIX = 'bvlc_reference_caffenet'
+CAFFE_ROOT = os.path.join(os.path.expanduser('~'), 'caffe')
+MODEL_FILE = os.path.join(CAFFE_ROOT, SUFFIX, 'deploy.prototxt')
+PRETRAINED = os.path.join(CAFFE_ROOT, SUFFIX, SUFFIX + '.caffemodel')
 
 def load_img(filename, flip = False):
     img = cv2.imread(filename)
@@ -77,7 +77,7 @@ def video_to_vec(video, net, transformer):
     return np.asarray(predictions)
 
 def write_features(predictions, video):
-    with open(os.path.join(video, 'features' + '-' + SUFFIX + '.csv'), 'w') as f:
+    with open(os.path.join(video, 'features' + '_' + SUFFIX + '.csv'), 'w') as f:
         np.savetxt(f, predictions, delimiter = ',')
 
 def generate_features():
@@ -114,7 +114,7 @@ def is_forward(video):
     return False
 
 def load_features(video):
-    with open(os.path.join(video, 'features' + '-' + SUFFIX + '.csv'), 'r') as f:
+    with open(os.path.join(video, 'features' + '_' + SUFFIX + '.csv'), 'r') as f:
         X = np.loadtxt(f, delimiter = ',')
     return X
 
