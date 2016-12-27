@@ -40,9 +40,10 @@ def optical_flow(imgs):
     T = len(imgs)
     flows = []
     for i in range(1, T-1):
-        flow = cv2.calcOpticalFlowFarneback(imgs[i-1],imgs[i+1], None, 0.5, 3, 15, 3, 5, 1.2, 0)
+        flow = cv2.calcOpticalFlowFarneback(imgs[i-1],imgs[i+1], None, 0.5, 3, 15, 3, 5, 1.1, 0)
         flows.append(flow)
     return flows
+
 def optical_flow_to_motion(flow):
     hsv = np.zeros((flow.shape[0], flow.shape[1], 3), dtype = np.uint8)
     hsv[...,1] = 255
@@ -70,18 +71,27 @@ def video_to_vec(video, net, transformer):
             imgs = load_video(video, reverse, flip)
             imgs_gray = map(lambda x: cv2.cvtColor(x, cv2.COLOR_BGR2GRAY), imgs)
             flows = optical_flow(imgs_gray)
+            for flow in flows:
+                flow[np.abs(flow) < 0.5] = 0
             motions = map(optical_flow_to_motion, flows)
             motions = map(lambda x: transformer.preprocess('data', x), motions)
             predictions[idx] = motions_to_vec(motions, net)
             idx += 1
     return np.asarray(predictions)
 
+def show_imgs(imgs):
+    for img in imgs:
+        cv2.imshow('frame', img)
+        k = cv2.waitKey(30) & 0xff
+        if k == 27:
+            break
+    cv2.destroyAllWindows()
+
 def write_features(predictions, video):
     with open(os.path.join(video, 'features' + '_' + SUFFIX + '.csv'), 'w') as f:
         np.savetxt(f, predictions, delimiter = ',')
 
 def generate_features():
-
     caffe.set_mode_gpu()
     net = caffe.Net(MODEL_FILE, PRETRAINED, caffe.TEST) 
     net.blobs['data'].reshape(1, 3, 227, 227)
@@ -97,7 +107,6 @@ def generate_features():
     #                   channel_swap=(2,1,0),
     #                   raw_scale=255,
     #                   image_dims=(256, 256))
-
     videos = map(lambda x: os.path.join(DATA_DIR, x), os.listdir(DATA_DIR))
 
     count = 1
@@ -168,9 +177,18 @@ def predict_dataset(dataset = 1):
 def run():
     map(predict_dataset, range(1, 4))
 
+def test():
+    video = './data/ArrowDataAll/F_aqvxyejK0MQ'
+    imgs = load_video(video)
+    imgs_gray = map(lambda x: cv2.cvtColor(x, cv2.COLOR_BGR2GRAY), imgs)
+    flows = optical_flow(imgs_gray)
+    for flow in flows:
+        flow[np.abs(flow) < 0.5] = 0
+    motions = map(optical_flow_to_motion, flows)
+    show_imgs(motions)
 
 if __name__ == '__main__':
-    run()
+    test()
     #generate_features()
     #video = "./data/ArrowDataAll/F_aqvxyejK0MQ/"
     #imgs = load_video(video, False, False)
