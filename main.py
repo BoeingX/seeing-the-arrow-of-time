@@ -57,13 +57,15 @@ def optical_flow_to_motion(flow):
     bgr = cv2.cvtColor(hsv,cv2.COLOR_HSV2BGR)
     return bgr
 
-def motion_to_vec(motions, net):
-    net.blobs['data'].reshape(len(motions), 3, 227, 227)
-    net.blobs['data'].data[...] = motions
-    ### perform classification
+def motion_to_vec(motion, net):
+    net.blobs['data'].data[...] = motion
     output = net.forward()
     output_prob = output['prob']
-    return np.mean(output_prob, axis = 0)
+    return output_prob
+
+def motions_to_vec(motions, net):
+    output_prob = np.asarray(map(lambda x: motion_to_vec(x, net), motions))
+    return np.mean(output_prob, axis = 0).squeeze()
 
 def video_to_vec(video, net, transformer):
     predictions = [None] * 4
@@ -75,7 +77,7 @@ def video_to_vec(video, net, transformer):
             flows = optical_flow(imgs_gray)
             motions = map(optical_flow_to_motion, flows)
             motions = map(lambda x: transformer.preprocess('data', x), motions)
-            predictions[idx] = motion_to_vec(motions, net)
+            predictions[idx] = motions_to_vec(motions, net)
             idx += 1
     return np.asarray(predictions)
 
@@ -89,6 +91,7 @@ def run():
     PRETRAINED = '/home/bysong/caffe/models/bvlc_reference_caffenet/bvlc_reference_caffenet.caffemodel'
     caffe.set_mode_gpu()
     net = caffe.Net(MODEL_FILE, PRETRAINED, caffe.TEST) 
+    net.blobs['data'].reshape(1, 3, 227, 227)
     mu = np.load(CAFFE_ROOT + 'python/caffe/imagenet/ilsvrc_2012_mean.npy')
     mu = mu.mean(1).mean(1)
     transformer = caffe.io.Transformer({'data': net.blobs['data'].data.shape})
@@ -109,7 +112,6 @@ def run():
     for video in videos:
         print '[INFO] processing video %d / %d' % (count, len(videos))
         predictions = video_to_vec(video, net, transformer)
-
         write_features(predictions, video)
         count += 1
 
