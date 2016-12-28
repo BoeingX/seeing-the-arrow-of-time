@@ -19,7 +19,7 @@ def load_img(filename, flip = False):
         img = cv2.flip(img, 1)
     #fy = 983.0 / img.shape[1]
     #img = cv2.resize(img, (0, 0), fx = fy, fy = fy)
-    img = cv2.resize(img, (227, 227))
+    img = cv2.resize(img, (256, 256))
     return img
 
 def load_imgs(filenames, reverse = False, flip = False):
@@ -28,11 +28,11 @@ def load_imgs(filenames, reverse = False, flip = False):
     imgs = map(lambda x: load_img(x, flip), filenames)
     return imgs
 
-def load_video(filename, reverse = False, flip = False):
-    filenames = os.listdir(filename)
-    filenames = filter(lambda x: x[-4:] == 'jpeg', filenames)
+def load_video(video, reverse = False, flip = False):
+    filenames = os.listdir(video)
+    filenames = filter(lambda x: x[:2] == 'im' and x[-4:] == 'jpeg', filenames)
     filenames.sort()
-    filenames = map(lambda x: os.path.join(filename, x), filenames)
+    filenames = map(lambda x: os.path.join(video, x), filenames)
     imgs = load_imgs(filenames, reverse, flip)
     return imgs
 
@@ -158,6 +158,8 @@ def load_list(dataset = 1):
     return train_list, test_list
 
 def predict_dataset(dataset = 1):
+    """use naive SVM to predict
+    """
     train_list, test_list = load_list(dataset)
     X_train, y_train, X_test, y_test_ = load_dataset(train_list, test_list)
     svc = SVC(kernel = 'rbf')
@@ -174,21 +176,44 @@ def predict_dataset(dataset = 1):
     print 'Precision of dataset %d: %f' % (dataset, precision)
     return precision
 
-def run():
+def run_svm():
     map(predict_dataset, range(1, 4))
 
-def test():
-    video = './data/ArrowDataAll/F_aqvxyejK0MQ'
-    imgs = load_video(video)
-    imgs_gray = map(lambda x: cv2.cvtColor(x, cv2.COLOR_BGR2GRAY), imgs)
-    flows = optical_flow(imgs_gray)
-    for flow in flows:
-        flow[np.abs(flow) < 0.5] = 0
-    motions = map(optical_flow_to_motion, flows)
-    show_imgs(motions)
+def generate_optical_flow():
+    """generate optical flows of every video
+    and save them to the same directory than
+    the original video"""
+    videos = os.listdir(DATA_DIR)
+    for count in range(len(videos)):
+        print '[INFO] processing video %d / %d' % (count, len(videos))
+        video = videos[count]
+        tmp_imgs = filter(lambda x: x[-4:] == 'jpeg', os.listdir(os.path.join(DATA_DIR, video)))
+        tmp_orig_imgs = filter(lambda x: x[:2] == 'im', tmp_imgs)
+        print len(tmp_imgs), len(tmp_orig_imgs)
+        if (len(tmp_orig_imgs) - 2)*4+len(tmp_orig_imgs) == len(tmp_imgs):
+            print 'already treated'
+            continue
+        fold = 1
+        for reverse in [False, True]:
+            for flip in [False, True]:
+                imgs = load_video(os.path.join(DATA_DIR, video), reverse, flip)
+                imgs_gray = map(lambda x: cv2.cvtColor(x, cv2.COLOR_BGR2GRAY), imgs)
+                flows = optical_flow(imgs_gray)
+                for flow in flows:
+                    flow[np.abs(flow) < 0.5] = 0
+                motions = map(optical_flow_to_motion, flows)
+                for idx in range(len(motions)):
+                    if os.path.isfile(os.path.join(DATA_DIR, video, 'of' + str(fold) + 'F' + str(idx+1).zfill(8) + '.jpeg')):
+                        continue
+                    motion = motions[idx]
+                    if (is_forward(video) and (not reverse)) or ((not is_forward(video)) and reverse):
+                        cv2.imwrite(os.path.join(DATA_DIR, video, 'of' + str(fold) + 'F' + str(idx+1).zfill(8) + '.jpeg'), motion)
+                    else:
+                        cv2.imwrite(os.path.join(DATA_DIR, video, 'of' + str(fold) + 'B' + str(idx+1).zfill(8) + '.jpeg'), motion)
+                fold += 1
 
 if __name__ == '__main__':
-    test()
+    generate_optical_flow()
     #generate_features()
     #video = "./data/ArrowDataAll/F_aqvxyejK0MQ/"
     #imgs = load_video(video, False, False)
