@@ -146,15 +146,16 @@ def load_dataset(train_list, test_list):
     X_test, y_test = load_features_labels(test_list)
     return X_train, y_train, X_test, y_test
 
-def load_list(dataset = 1):
+def load_list(dataset = 1, prefix = True):
     train_list = os.path.join(INDEX_DIR, 'train') + str(dataset) + '.txt'
     test_list = os.path.join(INDEX_DIR, 'test') + str(dataset) + '.txt'
     with open(train_list) as f:
         train_list = f.read().splitlines()
     with open(test_list) as f:
         test_list = f.read().splitlines()
-    train_list = map(lambda x: os.path.join(DATA_DIR, x), train_list)
-    test_list = map(lambda x: os.path.join(DATA_DIR, x), test_list)
+    if prefix:
+        train_list = map(lambda x: os.path.join(DATA_DIR, x), train_list)
+        test_list = map(lambda x: os.path.join(DATA_DIR, x), test_list)
     return train_list, test_list
 
 def predict_dataset(dataset = 1):
