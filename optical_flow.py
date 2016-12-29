@@ -47,7 +47,7 @@ def generate_optical_flow(videos, h5name):
                     stacked_flow = []
                     flows = optical_flow(imgs_gray)
                     # select uniformly 50 frames
-                    select = map(int, np.linspace(0, len(flows)-1, 25))
+                    select = map(int, np.linspace(0, len(flows)-1, 10))
                     for s in select:
                         stacked_flow.append(flows[s][..., 0])
                         stacked_flow.append(flows[s][..., 1])
@@ -58,8 +58,8 @@ def generate_optical_flow(videos, h5name):
                         label = 0
                     datum = caffe.proto.caffe_pb2.Datum()
                     datum.channels = len(stacked_flow) 
-                    datum.height = 256
-                    datum.width = 256
+                    datum.height = 224
+                    datum.width = 224
                     datum.data = stacked_flow.tobytes()
                     datum.label = label 
                     str_id = '{:08}'.format(idx)
@@ -70,7 +70,7 @@ def run(dataset = 1):
     data_dir = './data'
     train_list, test_list = load_list(data_dir, dataset, False)
     generate_optical_flow(train_list, os.path.join(data_dir, 'train' + str(dataset)))
-    generate_optical_flow(train_list, os.path.join(data_dir, 'test' + str(dataset)))
+    generate_optical_flow(test_list, os.path.join(data_dir, 'test' + str(dataset)))
 
 if __name__ == '__main__':
     run()
