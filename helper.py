@@ -1,6 +1,7 @@
 import os
 import sys
 import cv2
+import numpy as np
 def show_imgs(imgs):
     for img in imgs:
         cv2.imshow('frame', img)
@@ -56,9 +57,9 @@ def load_features_labels(videos, data_dir, suffix):
     y = y.reshape(1, -1).squeeze()
     return X, y
 
-def load_dataset(train_list, test_list):
-    X_train, y_train = load_features_labels(train_list)
-    X_test, y_test = load_features_labels(test_list)
+def load_dataset(train_list, test_list, data_dir, suffix):
+    X_train, y_train = load_features_labels(train_list, data_dir, suffix)
+    X_test, y_test = load_features_labels(test_list, data_dir, suffix)
     return X_train, y_train, X_test, y_test
 
 def load_list(data_dir, dataset = 1, prefix = True):

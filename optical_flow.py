@@ -58,8 +58,8 @@ def generate_optical_flow(videos, h5name):
                         label = 0
                     datum = caffe.proto.caffe_pb2.Datum()
                     datum.channels = len(stacked_flow) 
-                    datum.height = 224
-                    datum.width = 224
+                    datum.height = 256
+                    datum.width = 256
                     datum.data = stacked_flow.tobytes()
                     datum.label = label 
                     str_id = '{:08}'.format(idx)
@@ -73,5 +73,5 @@ def run(dataset = 1):
     generate_optical_flow(test_list, os.path.join(data_dir, 'test' + str(dataset)))
 
 if __name__ == '__main__':
-    run()
+    map(run, [2,3])
     #map(run, range(1, 4))

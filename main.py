@@ -12,8 +12,9 @@ PRETRAINED = os.path.join(CAFFE_ROOT, 'binarygooglenet1_iter_1368.caffemodel')
 def predict_dataset(dataset = 1):
     """use naive SVM to predict
     """
-    train_list, test_list = load_list(dataset)
-    X_train, y_train, X_test, y_test_ = load_dataset(train_list, test_list)
+    train_list, test_list = load_list('./data/', dataset, False)
+    data_dir = './data/ArrowDataAll/'
+    X_train, y_train, X_test, y_test_ = load_dataset(train_list, test_list, data_dir, 'bvlc_reference_caffenet')
     svc = SVC(kernel = 'rbf')
     svc.fit(X_train, y_train)
     y_predict_ = svc.predict(X_test)
