@@ -65,5 +65,21 @@ def run_caffe(dataset = 1):
     test[3] = test.apply(lambda x: predict(x[0], transformer, net), axis = 1)
     test.to_csv('test1.csv', sep = ' ', header = False)
 
+# method 3
+
+def test(dataset = 1):
+    CAFFE_ROOT = os.path.join(os.path.expanduser('~'), 'caffe')
+    model_def = './models/caffenet/deploy.prototxt'
+    model_weights = './models/caffenet/caffenet_train_iter_80000.caffemodel'
+    caffe.set_mode_gpu()
+    net = caffe.Net(model_def,      # defines the structure of the model
+                model_weights,  # contains the trained weights
+                caffe.TEST)     # use test mode (e.g., don't perform dropout)
+    # set the size of the input (we can skip this if we're happy
+    #  with the default; we can also change it later, e.g., for different batch sizes)
+    net.blobs['data'].reshape(50,        # batch size
+                          20,         # 3-channel (BGR) images
+                          227, 227)  # image size is 227x227
+
 if __name__ == '__main__':
     run_caffe()

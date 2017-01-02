@@ -14,7 +14,6 @@ def load_img(filename, flip = False):
     img = cv2.imread(filename)
     if flip:
         img = cv2.flip(img, 1)
-    img = cv2.resize(img, (256, 256))
     return img
 
 def load_imgs(filenames, reverse = False, flip = False):

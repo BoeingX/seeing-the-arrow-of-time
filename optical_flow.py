@@ -8,10 +8,13 @@ import caffe
 from helper import *
 def optical_flow(imgs):
     T = len(imgs)
-    flows = []
-    for i in range(1, T-1):
-        flow = cv2.calcOpticalFlowFarneback(imgs[i-1],imgs[i+1], None, 0.5, 3, 15, 3, 5, 1.1, 0)
-        flow[np.abs(flow) < 0.5] = 0
+    n_flows = 10
+    flows = [] 
+    select = map(int, np.linspace(0, T-2, 10))
+    for i in select:
+        flow = cv2.calcOpticalFlowFarneback(imgs[i-1],imgs[i+1], None, 0.5, 3, 15, 3, 5, 1.2, 0)
+        flow = cv2.resize(flow, (256, 256))
+        flow = np.asarray(cv2.normalize(flow, None, 0, 255, cv2.NORM_MINMAX), dtype = np.uint8)
         flows.append(flow)
     return flows
 
@@ -35,37 +38,46 @@ def generate_optical_flow(videos, h5name):
     data_dir = 'data/ArrowDataAll'
     idx = 0
     env = lmdb.open(h5name, map_size = int(1e12))
-    with env.begin(write=True) as txn:
-        for count in range(len(videos)):
-            print '[INFO] processing video %d / %d' % (count, len(videos))
-            video = videos[count]
-            fold = 1
-            for reverse in [False, True]:
-                for flip in [False, True]:
-                    imgs = load_video(video, data_dir, is_raw_img, reverse, flip)
-                    imgs_gray = map(lambda x: cv2.cvtColor(x, cv2.COLOR_BGR2GRAY), imgs)
-                    stacked_flow = []
-                    flows = optical_flow(imgs_gray)
-                    # select uniformly 50 frames
-                    select = map(int, np.linspace(0, len(flows)-1, 10))
-                    for s in select:
-                        stacked_flow.append(flows[s][..., 0])
-                        stacked_flow.append(flows[s][..., 1])
-                    stacked_flow = np.asarray(stacked_flow)
-                    if (is_forward(video) and (not reverse)) or ((not is_forward(video)) and reverse):
-                        label = 1
-                    else:
-                        label = 0
-                    datum = caffe.proto.caffe_pb2.Datum()
-                    datum.channels = len(stacked_flow) 
-                    datum.height = 256
-                    datum.width = 256
-                    datum.data = stacked_flow.tobytes()
-                    datum.label = label 
-                    str_id = '{:08}'.format(idx)
-                    idx += 1
-                    # The encode is only essential in Python 3
-                    txn.put(str_id.encode('ascii'), datum.SerializeToString())
+    batch_size = 32
+    txn = env.begin(write = True)
+    for count in range(len(videos)):
+        print '[INFO] processing video %d / %d' % (count, len(videos))
+        video = videos[count]
+        fold = 1
+        for reverse in [False, True]:
+            for flip in [False, True]:
+                imgs = load_video(video, data_dir, is_raw_img, reverse, flip)
+                imgs_gray = map(lambda x: cv2.cvtColor(x, cv2.COLOR_BGR2GRAY), imgs)
+                stacked_flow = []
+                flows = optical_flow(imgs_gray)
+                # select uniformly 50 frames
+                for s in range(len(flows)):
+                    stacked_flow.append(flows[s][..., 0])
+                    stacked_flow.append(flows[s][..., 1])
+                stacked_flow = np.asarray(stacked_flow)
+                if (is_forward(video) and (not reverse)) or ((not is_forward(video)) and reverse):
+                    label = 1
+                else:
+                    label = 0
+                datum = caffe.proto.caffe_pb2.Datum()
+                datum.channels = len(stacked_flow) 
+                datum.height = 256
+                datum.width = 256
+                datum.data = stacked_flow.tobytes()
+                #datum.float_data.extend(stacked_flow.astype(float).flat)
+                datum.label = label 
+                str_id = '{:08}'.format(idx)
+                idx += 1
+                # The encode is only essential in Python 3
+                txn.put(str_id.encode('ascii'), datum.SerializeToString())
+                if(idx) % batch_size == 0:
+                    txn.commit()
+                    txn = env.begin(write=True)
+                    print 'batch %d written' % idx
+    if (idx+1) % batch_size != 0:
+        txn.commit()
+        print 'last batch'
+    env.close()
 def run(dataset = 1):
     data_dir = './data'
     train_list, test_list = load_list(data_dir, dataset, False)
@@ -73,5 +85,5 @@ def run(dataset = 1):
     generate_optical_flow(test_list, os.path.join(data_dir, 'test' + str(dataset)))
 
 if __name__ == '__main__':
-    map(run, [2,3])
+    map(run, [1])
     #map(run, range(1, 4))
