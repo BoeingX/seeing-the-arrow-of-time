@@ -4,7 +4,6 @@ import cv2
 import lmdb
 import caffe
 import numpy as np
-import gc
 from multiprocessing.dummy import Pool
 
 def show_imgs(imgs):
@@ -126,18 +125,18 @@ def run(videos, l = 0, u = 1000000):
                 flow = flows[count]
                 flow_x = np.asarray(flow[..., 0], dtype = np.uint8)
                 flow_y = np.asarray(flow[..., 1], dtype = np.uint8)
-                if is_forward(video) and (not reverse):
+                if (is_forward(video) and (not reverse)) or ((not is_forward(video)) and reverse):
                     cv2.imwrite(os.path.join('./data/ArrowDataAll', video, 'off' + str(count+1).zfill(8) + 'x.jpeg'), flow_x)
                     cv2.imwrite(os.path.join('./data/ArrowDataAll', video, 'off' + str(count+1).zfill(8) + 'y.jpeg'), flow_y)
                 else:
                     cv2.imwrite(os.path.join('./data/ArrowDataAll', video, 'ofb' + str(count+1).zfill(8) + 'x.jpeg'), flow_x)
                     cv2.imwrite(os.path.join('./data/ArrowDataAll', video, 'ofb' + str(count+1).zfill(8) + 'y.jpeg'), flow_y)
-        del imgs, flows
-        gc.collect()
             
 if __name__ == '__main__':
     l = int(sys.argv[1])
     r = int(sys.argv[2])
     train, test = load_list('./data')
     train.extend(test)
+    train = filter(lambda x: not is_forward(x), train)
+    print len(train)
     run(train, l, r)

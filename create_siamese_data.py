@@ -94,7 +94,7 @@ def stack_img(imgs):
     return np.asarray(stacked_imgs, dtype = np.uint8)
 
 def run(videos, lmdbfile, limit = 1000000):
-    env = lmdb.open(lmdbfile, map_size = int(1e10))
+    env = lmdb.open(lmdbfile, map_size = int(1e12))
     txn = env.begin(write = True)
     idx = 0
     batch_size = 30
