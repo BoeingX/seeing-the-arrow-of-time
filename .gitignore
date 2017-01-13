@@ -3,3 +3,7 @@ data/
 *.swp
 *.txt
 *.mat
+.ipynb_checkpoints/
+*.jpg
+*.jpeg
+*.avi
