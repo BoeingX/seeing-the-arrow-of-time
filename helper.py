@@ -71,9 +71,10 @@ def load_flows(video, direction):
     imgs_ = load_video(video, './data/ArrowDataAll', 
                                mask = lambda x: x[:3] == 'of' + direction, 
                                grayscale=True)
-    imgs_ = map(lambda x: cv2.resize(x, (227, 227)), imgs_)
+    imgs_ = map(lambda x: cv2.resize(x, (256, 256)), imgs_)
     return imgs_
-def select(imgs, n = 5):
+
+def select(imgs, n = 3):
     mags = [None] * (len(imgs)/2)
     for i in range(len(imgs)/2):
         mag, _ = cv2.cartToPolar(np.asarray(imgs[2*i], dtype = np.float32), np.asarray(imgs[2*i+1], dtype = np.float32))
