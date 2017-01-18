@@ -22,7 +22,7 @@ def save_features(videos, net, transformer):
                     direction = 'f'
                 else:
                     direction = 'b'
-                flows = load_video(video, './data/ArrowDataAll/', mask = lambda x: x[:3] == 'of' + direction, grayscale = True, flip = flip)
+                flows = load_video(video, './data/ArrowDataAll/', mask = lambda x: x[:3] == 'of' + direction, grayscale = True, flip = flip, reverse = reverse)
                 sel = np.asarray([[2*i, 2*i+1] for i in select(flows, 1)]).flatten()
                 flows = np.take(flows, sel, axis = 0)
                 imgs = []

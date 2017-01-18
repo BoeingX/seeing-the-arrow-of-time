@@ -78,8 +78,9 @@ def select(imgs, n = 3):
     mags = [None] * (len(imgs)/2)
     for i in range(len(imgs)/2):
         mag, _ = cv2.cartToPolar(np.asarray(imgs[2*i], dtype = np.float32), np.asarray(imgs[2*i+1], dtype = np.float32))
-    mags[i] = cv2.norm(mag)
+        mags[i] = cv2.norm(mag)
     mags = np.asarray(mags)
-    idx = np.argsort(mags)[::-1][:n]
+    mags /= np.sum(mags)
+    idx = np.random.choice(len(mags), n, replace=False, p = mags)
     idx.sort()
     return idx
