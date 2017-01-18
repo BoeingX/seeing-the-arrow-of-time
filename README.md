@@ -19,7 +19,7 @@ Launch `opt_flow.py` to generate optical flows for the dataset.
 
 ### UCF-101
 
-C.f. [UCF-101](ucf101/README.md). 
+C.f. [UCF-101](ucf101/). 
 
 ## Troubleshooting
 
