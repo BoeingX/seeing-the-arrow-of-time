@@ -21,6 +21,16 @@ Launch `opt_flow.py` to generate optical flows for the dataset.
 
 C.f. [UCF-101](ucf101/). 
 
+## Models
+
+### Siamese network
+
+![Siamese](figs/network_arch_sampling.png)
+
+### Class activation mapping
+
+![Siamese](figs/network_arch_cam.png)
+
 ## Troubleshooting
 
 -   Use `OpenCV 2` instead of `OpenCV 3`
