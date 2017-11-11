@@ -1,6 +1,7 @@
 # Seeing the arrow of time
 
-This is the code repository for course project `Seeing the arrow of time` which consists of determining the direction of time of video being played.
+This is the code repository for course project `Seeing the arrow of time` which consists of detecting if a video is played backward in time. 
+See [doc/arrow-time.pdf](doc/arrow-time.pdf) for a detailed report.
 
 ## Dependencies
 
